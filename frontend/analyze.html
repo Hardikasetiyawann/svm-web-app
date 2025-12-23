@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard Analisis SVM - Final Version</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -64,8 +65,28 @@
     <section id="sectionText" class="space-y-6">
         <div class="card p-8">
             <h2 class="text-lg font-bold mb-4">✍️ Input Komentar</h2>
-            <textarea id="inputText" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-primary outline-none transition" placeholder="Masukkan komentar di sini..."></textarea>
-            <button id="btnAnalyzeText" onclick="analyzeText()" class="w-full mt-4 bg-brand-primary hover:bg-purple-700 text-white py-3 rounded-xl font-bold transition">Analisis Sekarang</button>
+            <textarea id="inputText" rows="4"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-primary outline-none transition"
+                placeholder="Masukkan komentar di sini..."></textarea>
+
+                <div class="flex gap-3 mt-4">
+                    <!-- ANALYZE BUTTON -->
+                    <button id="btnAnalyzeText"
+                    onclick="analyzeText()"
+                    class="flex-1 bg-brand-primary hover:bg-purple-700 text-white py-3 rounded-xl font-bold transition">
+                    Analisis Sekarang
+                    </button>
+
+                    <!-- RESET BUTTON -->
+                    <button onclick="resetTextForm()"
+                    title="Reset"
+                    class="w-12 h-12 flex items-center justify-center rounded-xl
+                            border border-slate-300 text-slate-500 hover:bg-slate-100
+                            transition">
+                    ✖
+                    </button>
+                </div>
+    
         </div>
 
         <div id="textResultContainer" class="hidden card p-8 border-t-4 border-brand-primary">
@@ -108,7 +129,7 @@
 
             <!-- 1. Distribusi Label Kategori (Pie Chart) -->
             <div class="card p-8 text-center">
-                <h3 class="font-bold text-lg mb-6">1. Distribusi Label Kategori</h3>
+                <h3 class="font-bold text-lg mb-6">Distribusi Label Kategori</h3>
                 <div class="max-w-xs mx-auto">
                     <canvas id="categoryPieChart"></canvas>
                 </div>
@@ -116,7 +137,7 @@
 
             <!-- 2. Sentimen per Label Kategori -->
             <div class="card p-8">
-                <h3 class="font-bold text-lg mb-6">2. Analisis Sentimen per Kategori</h3>
+                <h3 class="font-bold text-lg mb-6">Analisis Sentimen per Kategori</h3>
                 <div class="h-80">
                     <canvas id="sentimentStackChart"></canvas>
                 </div>
@@ -125,7 +146,7 @@
             <!-- 3. Tabel Data -->
             <div class="card">
                 <div class="p-6 border-b border-slate-100">
-                    <h3 class="font-bold text-lg">3. Rincian Tabel Hasil Analisis</h3>
+                    <h3 class="font-bold text-lg">Rincian Tabel Hasil Analisis</h3>
                 </div>
                 <div class="overflow-x-auto max-h-96 custom-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
@@ -141,6 +162,17 @@
                     </table>
                 </div>
             </div>
+             <!-- DOWNLOAD BUTTONS -->
+                <div class="flex justify-end gap-3 mb-4 px-6">
+                    <button onclick="downloadCSV()" 
+                        class="bg-brand-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                        ⬇️ Download CSV
+                    </button>
+                    <button onclick="downloadExcel()" 
+                        class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold transition">
+                        ⬇️ Download Excel
+                    </button>
+                </div>
 
             <!-- 4. Keywords -->
             <div class="grid md:grid-cols-2 gap-6">
@@ -168,6 +200,7 @@
     const API_URL = "http://127.0.0.1:5000";
     let globalData = [];
     let charts = {};
+    let textAnalyzed = false;
 
     function switchTab(tab) {
         const isText = tab === 'text';
@@ -178,38 +211,65 @@
     }
 
     async function analyzeText() {
-        const text = document.getElementById('inputText').value;
-        if (!text) return alert("Isi teks!");
+        const textInput = document.getElementById('inputText');
+        const btn = document.getElementById('btnAnalyzeText');
+        const text = textInput.value.trim();
+
+        if (!text) {
+            alert("Isi teks terlebih dahulu!");
+            return;
+        }
+
         try {
+            btn.innerText = "Menganalisis...";
+            btn.disabled = true;
+
             const res = await fetch(`${API_URL}/predict-text`, {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({text})
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
             });
+
             const d = await res.json();
-            
-            const resSentElem = document.getElementById('resSentiment');
+
             document.getElementById('textResultContainer').classList.remove('hidden');
-            
-            // Set teks hasil
-            resSentElem.innerText = d.sentimen;
+            document.getElementById('resSentiment').innerText = d.sentimen;
             document.getElementById('resTopic').innerText = d.kategori;
             document.getElementById('resPreprocessed').innerText = d.preprocessed || "-";
 
-            // Atur Warna Sentimen (Teks Tunggal)
-            // Hapus kelas warna sebelumnya
+            // Warna sentimen
+            const resSentElem = document.getElementById('resSentiment');
             resSentElem.classList.remove('text-rose-500', 'text-emerald-500', 'text-slate-800');
-            
-            const sentimen = d.sentimen.toLowerCase();
-            if (sentimen === 'negatif') {
-                resSentElem.classList.add('text-rose-500'); // Merah
-            } else if (sentimen === 'positif') {
-                resSentElem.classList.add('text-emerald-500'); // Hijau
+
+            if (d.sentimen.toLowerCase() === 'negatif') {
+                resSentElem.classList.add('text-rose-500');
+            } else if (d.sentimen.toLowerCase() === 'positif') {
+                resSentElem.classList.add('text-emerald-500');
             } else {
-                resSentElem.classList.add('text-slate-800'); // Hitam/Gelap (Netral)
+                resSentElem.classList.add('text-slate-800');
             }
 
-        } catch(e) { alert("Gagal koneksi ke server"); }
+            // UBAH STATUS TOMBOL
+            textAnalyzed = true;
+            btn.innerText = "Analisis Ulang";
+            btn.disabled = false;
+
+        } catch (e) {
+            alert("Gagal koneksi ke server");
+            btn.innerText = "Analisis Sekarang";
+            btn.disabled = false;
+        }
+    }
+
+    function resetTextForm() {
+        document.getElementById('inputText').value = "";
+        document.getElementById('textResultContainer').classList.add('hidden');
+
+        const btn = document.getElementById('btnAnalyzeText');
+        btn.innerText = "Analisis Sekarang";
+        btn.disabled = false;
+
+        textAnalyzed = false;
     }
 
     function fileSelected() {
@@ -324,16 +384,34 @@
     function renderKeywords() {
         const groupK = groupKW('kategori');
         const groupS = groupKW('sentimen');
-        
-        const renderBox = (data) => Object.entries(data).map(([key, words]) => `
+
+        const sentimentColor = (s) => {
+            if (s.toLowerCase() === 'positif') return 'bg-emerald-100 text-emerald-700';
+            if (s.toLowerCase() === 'negatif') return 'bg-rose-100 text-rose-700';
+            return 'bg-slate-200 text-slate-800'; // netral
+        };
+
+        // Kategori (tetap ungu)
+        document.getElementById('kwCategory').innerHTML =
+            Object.entries(groupK).map(([key, words]) => `
             <div>
                 <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold uppercase">${key}</span>
-                <p class="mt-1 text-slate-600 italic">${words.length > 0 ? words.join(', ') : 'Tidak ada kata kunci'}</p>
+                <p class="mt-1 text-slate-600 italic">
+                    ${words.length ? words.join(', ') : 'Tidak ada kata kunci'}
+                </p>
             </div>
         `).join('');
 
-        document.getElementById('kwCategory').innerHTML = renderBox(groupK);
-        document.getElementById('kwSentiment').innerHTML = renderBox(groupS);
+        // Sentimen (warna DINAMIS)
+        document.getElementById('kwSentiment').innerHTML =
+            Object.entries(groupS).map(([key, words]) => `
+            <div>
+                <span class="${sentimentColor(key)} px-2 py-1 rounded text-xs font-bold uppercase">${key}</span>
+                <p class="mt-1 text-slate-600 italic">
+                    ${words.length ? words.join(', ') : 'Tidak ada kata kunci'}
+                </p>
+            </div>
+        `).join('');
     }
 
     function groupKW(field) {
@@ -354,7 +432,7 @@
         for(let key in res) {
             final[key] = Object.entries(res[key])
                 .sort((a,b) => b[1] - a[1])
-                .slice(0, 5)
+                .slice(0, 20)
                 .map(x => x[0]);
         }
         return final;
@@ -365,6 +443,54 @@
             acc[curr[key]] = (acc[curr[key]] || 0) + 1;
             return acc;
         }, {});
+    }
+    function downloadCSV() {
+        if (!globalData.length) {
+            alert("Tidak ada data untuk diunduh");
+            return;
+        }
+
+        const headers = ["No", "Komentar", "Kategori", "Sentimen"];
+        const rows = globalData.map((d, i) => [
+            i + 1,
+            (d.text || d.komentar || d.Komentar || "").replace(/"/g, '""'),
+            d.kategori,
+            d.sentimen
+        ]);
+
+        let csvContent = headers.join(",") + "\n";
+        rows.forEach(r => {
+            csvContent += `"${r.join('","')}"\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "hasil_analisis_svm.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    function downloadExcel() {
+        if (!globalData.length) {
+            alert("Tidak ada data untuk diunduh");
+            return;
+        }
+
+        const dataForExcel = globalData.map((d, i) => ({
+            No: i + 1,
+            Komentar: d.text || d.komentar || d.Komentar || "",
+            Kategori: d.kategori,
+            Sentimen: d.sentimen
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Hasil Analisis");
+
+        XLSX.writeFile(workbook, "hasil_analisis_svm.xlsx");
     }
 </script>
 
