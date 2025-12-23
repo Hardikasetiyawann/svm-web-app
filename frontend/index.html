@@ -1,231 +1,354 @@
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Beranda | Analisis Sentimen & Topik SVM</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SVM Research | Analisis Opini Publik</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            primary: '#6D28D9',
-                            secondary: '#4F46E5',
-                            accent: '#8B5CF6',
-                            surface: '#F8FAFC'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#6D28D9',
+        secondary: '#7C3AED',
+        soft: '#F5F3FF',
+        borderSoft: '#EDE9FE'
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace']
+      }
+    }
+  }
+}
+</script>
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
-        .clean-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s ease;
-        }
-
-        .clean-card:hover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            transform: translateY(-2px);
-        }
-
-        .text-gradient {
-            background: linear-gradient(to right, #6D28D9, #3B82F6);
-            -webkit-background-clip: text;            
-            background-clip: text;     
-            -webkit-text-fill-color: transparent;
-        }
-
-
-        .blob {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: linear-gradient(180deg, rgba(109, 40, 217, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
-            filter: blur(80px);
-            border-radius: 50%;
-            z-index: -1;
-        }
-    </style>
+<style>
+.code-card {
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(15,23,42,.2);
+}
+</style>
 </head>
 
-<body class="bg-white text-slate-900 font-sans antialiased overflow-x-hidden">
+<body class="bg-white text-slate-800 font-sans">
 
-<nav class="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-brand-primary to-blue-500 rounded-xl flex items-center justify-center text-white font-extrabold shadow-lg shadow-purple-200">
-                S
-            </div>
-            <span class="font-bold text-xl tracking-tight text-slate-800">
-                SVM<span class="text-brand-primary">Research</span>
-            </span>
-        </div>
-
-        <div class="hidden md:flex gap-8 text-sm font-semibold text-slate-500">
-            <a href="#" class="hover:text-brand-primary transition-colors">Beranda</a>
-            <a href="#flow" class="hover:text-brand-primary transition-colors">Metodologi</a>
-            <a href="#preprocessing" class="hover:text-brand-primary transition-colors">Preprocessing</a>
-        </div>
-
-        <a href="analyze.html"
-           class="bg-brand-primary hover:bg-brand-accent px-6 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-purple-200 active:scale-95">
-            Mulai Analisis
-        </a>
+<!-- NAVBAR -->
+<nav class="fixed w-full z-50 bg-white/80 backdrop-blur border-b border-borderSoft">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-primary text-white font-extrabold rounded-xl flex items-center justify-center">
+        S
+      </div>
+      <span class="font-bold text-lg">SVM<span class="text-primary">Research</span></span>
     </div>
+
+    <div class="hidden md:flex gap-8 font-semibold text-sm text-slate-500">
+      <a href="#about" class="hover:text-primary">Tentang</a>
+      <a href="#method" class="hover:text-primary">Metodologi</a>
+      <a href="#evaluation" class="hover:text-primary">Evaluasi</a>
+    </div>
+
+    <a href="analyze.html" class="bg-primary hover:bg-secondary px-6 py-2 rounded-xl text-white font-bold">
+      Mulai Analisis
+    </a>
+  </div>
 </nav>
 
-<section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
-    <!-- Blobs Background -->
-    <div class="blob -top-20 -right-20"></div>
-    <div class="blob -bottom-20 -left-20"></div>
+<!-- HERO -->
+<section class="pt-32 pb-28 bg-soft">
+  <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
 
-    <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-        <div class="space-y-8 animate-fade-in">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-100 text-sm font-medium text-brand-primary">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-purple-600"></span>
-                </span>
-                Proyek Penelitian Akademik 2025
-            </div>
+    <div class="space-y-8">
+      <span class="inline-block px-4 py-1.5 bg-white border border-borderSoft rounded-full text-primary text-sm font-semibold">
+        Proyek Penelitian Akademik 2025
+      </span>
 
-            <h1 class="text-5xl md:text-7xl font-extrabold leading-[1.1] text-slate-900">
-                Analisis Opini Publik<br>
-                <span class="text-gradient">Banjir Bandang Sumatra</span>
-            </h1>
+      <h1 class="text-5xl font-extrabold leading-tight">
+        Analisis Opini Publik<br>
+        <span class="text-primary">Banjir Bandang Sumatra</span>
+      </h1>
 
-            <p class="text-slate-600 text-lg max-w-xl leading-relaxed">
-                Platform cerdas untuk klasifikasi <b>topik</b> dan <b>sentimen</b> komentar digital menggunakan algoritma <b>Support Vector Machine (SVM)</b> yang dioptimalkan dengan Chi-Square.
-            </p>
+      <p class="text-lg text-slate-600 leading-relaxed max-w-xl">
+        Sistem klasifikasi <b>topik</b> dan <b>sentimen</b> komentar publik berbasis
+        <b>Machine Learning</b> menggunakan algoritma
+        <b>Support Vector Machine (SVM)</b> dengan ekstraksi fitur TF-IDF dan seleksi fitur Chi-Square.
+      </p>
 
-            <div class="flex flex-wrap gap-4">
-                <a href="analyze.html"
-                   class="px-8 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition shadow-xl hover:shadow-slate-200">
-                    Coba Demo Sekarang
-                </a>
-                <a href="#flow"
-                   class="px-8 py-4 bg-white text-slate-600 font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 transition">
-                    Lihat Metodologi
-                </a>
-            </div>
-        </div>
-
-        <div class="relative group">
-            <div class="absolute -inset-4 bg-gradient-to-r from-brand-primary/20 to-blue-400/20 rounded-[2rem] blur-2xl group-hover:opacity-100 transition duration-1000"></div>
-            <div class="relative bg-white p-4 rounded-[2rem] border border-slate-100 shadow-2xl">
-                <!-- Gambar diperbaiki menggunakan ilustrasi 3D yang valid -->
-                <img src="https://img.freepik.com/free-vector/data-extraction-concept-illustration_114360-4766.jpg?t=st=1716300000&exp=1716303600&hmac=valid_placeholder" 
-                     onerror="this.src='https://illustrations.popsy.co/white/data-analysis.svg'"
-                     alt="Data Analysis Illustration"
-                     class="w-full rounded-[1.5rem]">
-            </div>
-        </div>
+      <div class="flex gap-4">
+        <a href="analyze.html" class="px-8 py-4 bg-primary text-white font-bold rounded-xl">
+          Coba Demo
+        </a>
+        <a href="#method" class="px-8 py-4 border border-borderSoft rounded-xl font-bold text-slate-600">
+          Lihat Metodologi
+        </a>
+      </div>
     </div>
+
+    <!-- CODE STYLE CARD -->
+    <div class="code-card p-8 font-mono text-sm">
+      <div class="flex gap-2 mb-6">
+        <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+        <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
+        <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+      </div>
+<pre><code><span class="text-purple-400">def</span> <span class="text-blue-400">analyze_comment</span>(text):
+    text = preprocess(text)
+    topic = svm_topic.predict(text)
+    sentiment = svm_sentiment.predict(text)
+    <span class="text-purple-400">return</span> topic, sentiment
+</code></pre>
+    </div>
+  </div>
 </section>
 
-<section id="flow" class="py-24 bg-slate-50/50">
-    <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-16">
-            <h2 class="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Metodologi Penelitian</h2>
-            <div class="h-1.5 w-20 bg-brand-primary mx-auto rounded-full"></div>
-            <p class="text-slate-500 mt-6 max-w-2xl mx-auto text-lg">
-                Alur kerja sistematis yang kami gunakan untuk memastikan akurasi data dan performa model SVM tetap optimal.
-            </p>
-        </div>
+<!-- ABOUT -->
+<section id="about" class="py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="text-4xl font-extrabold text-center mb-12">Tujuan & Kontribusi Penelitian</h2>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-            <div class="clean-card p-6 rounded-2xl text-center">
-                <div class="text-3xl mb-3">📚</div>
-                <div class="font-bold text-slate-800">Studi Literatur</div>
-            </div>
-            <div class="clean-card p-6 rounded-2xl text-center">
-                <div class="text-3xl mb-3">📡</div>
-                <div class="font-bold text-slate-800">Scraping Data</div>
-            </div>
-            <div class="clean-card p-6 rounded-2xl text-center">
-                <div class="text-3xl mb-3">🧹</div>
-                <div class="font-bold text-slate-800">Preprocessing</div>
-            </div>
-            <div class="clean-card p-6 rounded-2xl text-center">
-                <div class="text-3xl mb-3">🏷️</div>
-                <div class="font-bold text-slate-800">Pelabelan</div>
-            </div>
-            <div class="clean-card p-6 rounded-2xl text-center">
-                <div class="text-3xl mb-3">🤖</div>
-                <div class="font-bold text-slate-800">SVM & Eval</div>
-            </div>
-        </div>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="p-8 border border-borderSoft rounded-2xl">
+        <h3 class="font-bold mb-3">🎯 Tujuan</h3>
+        <p class="text-slate-600">
+          Mengembangkan sistem otomatis untuk menganalisis opini publik
+          terhadap bencana alam berbasis teks Bahasa Indonesia.
+        </p>
+      </div>
+
+      <div class="p-8 border border-borderSoft rounded-2xl">
+        <h3 class="font-bold mb-3">🧠 Kontribusi</h3>
+        <p class="text-slate-600">
+          Pendekatan klasifikasi SVM yang stabil untuk data teks tidak terstruktur
+          dengan preprocessing yang konsisten.
+        </p>
+      </div>
+
+      <div class="p-8 border border-borderSoft rounded-2xl">
+        <h3 class="font-bold mb-3">🌍 Manfaat</h3>
+        <p class="text-slate-600">
+          Memberikan wawasan berbasis data bagi peneliti, pemerintah,
+          dan masyarakat.
+        </p>
+      </div>
     </div>
+  </div>
 </section>
 
-<section id="preprocessing" class="py-24">
-    <div class="max-w-7xl mx-auto px-6">
-        <div class="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-16 shadow-2xl shadow-slate-200 grid md:grid-cols-2 gap-16 items-center">
-            <div class="space-y-6">
-                <h3 class="text-4xl font-extrabold text-slate-900 leading-tight">🛠️ Tahap Preprocessing Teks</h3>
-                <p class="text-slate-500 text-lg leading-relaxed">
-                    Data mentah dari YouTube dibersihkan secara mendalam untuk menghilangkan "noise" agar mesin dapat belajar lebih efektif.
-                </p>
+<!-- METODOLOGI -->
+<section id="method" class="py-28 bg-soft">
+  <div class="max-w-7xl mx-auto px-6">
 
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span class="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">1</span>
-                        <span class="text-slate-700 font-medium">Case Folding & Data Cleaning</span>
-                    </div>
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span class="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">2</span>
-                        <span class="text-slate-700 font-medium">Normalisasi Slang & Singkatan</span>
-                    </div>
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span class="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">3</span>
-                        <span class="text-slate-700 font-medium">Stemming Bahasa Indonesia</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="relative">
-                <div class="absolute -inset-2 bg-slate-900 rounded-3xl blur-lg opacity-10"></div>
-                <div class="relative bg-slate-900 p-8 rounded-3xl shadow-2xl font-mono text-sm leading-relaxed overflow-hidden">
-                    <div class="flex gap-2 mb-6 border-b border-slate-700 pb-4">
-                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                    </div>
-                    <p class="text-blue-400">def <span class="text-yellow-300">preprocess_text</span>(text):</p>
-                    <p class="pl-4 text-slate-300">text = text.lower()</p>
-                    <p class="pl-4 text-slate-300">text = clean_symbol(text)</p>
-                    <p class="pl-4 text-slate-300">text = normalize_slang(text)</p>
-                    <p class="pl-4 text-slate-300">text = stemmer.stem(text)</p>
-                    <p class="pl-4 text-blue-400">return <span class="text-slate-300">text</span></p>
-                </div>
-            </div>
-        </div>
+    <!-- JUDUL -->
+    <div class="text-center mb-20">
+      <h2 class="text-4xl font-extrabold mb-4">Metodologi Penelitian</h2>
+      <p class="text-slate-600 max-w-3xl mx-auto text-lg">
+        Penelitian ini menerapkan pendekatan <b>machine learning berbasis teks</b>
+        dengan algoritma <b>Support Vector Machine (SVM)</b> untuk melakukan
+        klasifikasi topik dan sentimen komentar publik terkait bencana banjir bandang
+        di wilayah Sumatra.
+      </p>
     </div>
+
+    <!-- STEP 1 -->
+    <div class="grid md:grid-cols-2 gap-16 items-center mb-24">
+      <div>
+        <h3 class="text-2xl font-bold mb-4 text-primary">1. Pengumpulan Data</h3>
+        <p class="text-slate-600 leading-relaxed mb-4">
+          Data diperoleh melalui proses <b>web scraping</b> menggunakan
+          <b>YouTube Data API v3</b> pada kanal berita yang membahas
+          peristiwa banjir bandang di Sumatra.
+        </p>
+        <ul class="list-disc pl-6 text-slate-600 space-y-2">
+          <li>Sumber data berupa komentar publik</li>
+          <li>Total data lebih dari <b>14.000 komentar</b></li>
+          <li>Data mencakup komentar utama dan balasan</li>
+        </ul>
+      </div>
+
+      <div class="code-card p-6 font-mono text-sm">
+<pre><code><span class="text-purple-400">youtube</span>.commentThreads().list(
+  videoId=video_id,
+  part="snippet,replies",
+  maxResults=100
+)
+</code></pre>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="grid md:grid-cols-2 gap-16 items-center mb-24">
+      <div class="order-2 md:order-1 code-card p-6 font-mono text-sm">
+<pre><code><span class="text-purple-400">def</span> preprocess(text):
+  text = text.lower()
+  text = remove_url(text)
+  text = normalize_slang(text)
+  text = stem(text)
+  <span class="text-purple-400">return</span> text
+</code></pre>
+      </div>
+
+      <div class="order-1 md:order-2">
+        <h3 class="text-2xl font-bold mb-4 text-primary">
+          2. Preprocessing Data Teks
+        </h3>
+        <p class="text-slate-600 leading-relaxed mb-4">
+          Data mentah dibersihkan secara sistematis untuk mengurangi noise
+          dan meningkatkan kualitas fitur teks sebelum proses pemodelan.
+        </p>
+        <ul class="list-disc pl-6 text-slate-600 space-y-2">
+          <li>Case folding (huruf kecil)</li>
+          <li>Penghapusan URL, emoji, angka, dan simbol</li>
+          <li>Normalisasi slang menggunakan kamus tidak baku</li>
+          <li>Tokenisasi dan stopword removal (negasi dipertahankan)</li>
+          <li>Stemming Bahasa Indonesia (Sastrawi)</li>
+          <li>Filtering komentar pendek (&lt; 5 kata)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="grid md:grid-cols-2 gap-16 items-center mb-24">
+      <div>
+        <h3 class="text-2xl font-bold mb-4 text-primary">
+          3. Pelabelan Data
+        </h3>
+        <p class="text-slate-600 leading-relaxed mb-4">
+          Proses pelabelan dilakukan secara <b>semi-otomatis</b> untuk efisiensi
+          dan konsistensi data latih.
+        </p>
+        <ul class="list-disc pl-6 text-slate-600 space-y-2">
+          <li>Pelabelan topik menggunakan <b>Sentence-BERT</b> (cosine similarity)</li>
+          <li>Empat kategori topik utama yaitu: <i>Simpati & Doa</i>, <i>Dampak & Kondisi Lapangan</i>, <i>Kerusakan Lingkungan</i>, dan <i>Kritik Pemerintah</i></li>
+          <li>Pelabelan sentimen menggunakan <b>IndoBERT</b></li>
+          <li>Refinement khusus kategori <i>Simpati & Doa</i></li>
+          <li>Validasi manual + Cohen’s Kappa</li>
+        </ul>
+      </div>
+
+      <div class="code-card p-6 font-mono text-sm">
+<pre><code>label = argmax(
+  cosine_similarity(
+    comment_embedding,
+    label_embedding
+  )
+)
+</code></pre>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="grid md:grid-cols-2 gap-16 items-center mb-24">
+      <div class="order-2 md:order-1 code-card p-6 font-mono text-sm">
+<pre><code>tfidf = TfidfVectorizer(
+  analyzer="char_wb",
+  ngram_range=(3,5)
+)
+
+chi2 = SelectKBest(k=8000)
+svm  = LinearSVC()
+</code></pre>
+      </div>
+
+      <div class="order-1 md:order-2">
+        <h3 class="text-2xl font-bold mb-4 text-primary">
+          4. Ekstraksi Fitur & Pemodelan
+        </h3>
+        <p class="text-slate-600 leading-relaxed mb-4">
+          Teks yang telah diproses direpresentasikan dalam bentuk numerik
+          menggunakan TF-IDF berbasis karakter untuk menangani variasi kata.
+        </p>
+        <ul class="list-disc pl-6 text-slate-600 space-y-2">
+          <li>TF-IDF character n-gram (3–5)</li>
+          <li>Seleksi fitur Chi-Square</li>
+          <li>Model klasifikasi: Linear SVM</li>
+          <li>Class weight balanced</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="grid md:grid-cols-2 gap-16 items-center">
+      <div>
+        <h3 class="text-2xl font-bold mb-4 text-primary">
+          5. Evaluasi Model
+        </h3>
+        <p class="text-slate-600 leading-relaxed mb-4">
+          Evaluasi performa model dilakukan untuk mengukur kemampuan generalisasi
+          terhadap data yang belum pernah dilihat sebelumnya.
+        </p>
+        <ul class="list-disc pl-6 text-slate-600 space-y-2">
+          <li>Confusion Matrix</li>
+          <li>Precision, Recall, F1-score</li>
+          <li>Accuracy & Macro F1</li>
+          <li>5-Fold Cross Validation</li>
+        </ul>
+      </div>
+
+      <div class="code-card p-6 font-mono text-sm">
+<pre><code>cross_val_score(
+  pipeline,
+  X, y,
+  scoring="f1_macro",
+  cv=5
+)
+</code></pre>
+      </div>
+    </div>
+
+  </div>
 </section>
 
-<footer class="bg-slate-50 border-t border-slate-200 py-12 text-center">
-    <div class="max-w-7xl mx-auto px-6">
-        <p class="text-slate-500 font-medium">© 2025 | Sistem Penelitian SVM Sumatra</p>
-        <div class="flex justify-center gap-6 mt-4 text-slate-400">
-            <a href="#" class="hover:text-brand-primary transition-colors">Github</a>
-            <a href="#" class="hover:text-brand-primary transition-colors">Dokumentasi</a>
-            <a href="#" class="hover:text-brand-primary transition-colors">Paper</a>
-        </div>
+
+<!-- EVALUATION -->
+<section id="evaluation" class="py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="text-4xl font-extrabold text-center mb-12">Evaluasi Model</h2>
+
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="p-8 border border-borderSoft rounded-2xl">
+        <h3 class="font-bold mb-4">📊 Sentimen</h3>
+        <ul class="text-slate-600 space-y-2">
+          <li>Accuracy ≈ 77%</li>
+          <li>Macro F1-Score ≈ 0.75</li>
+          <li>Kelas: Positif, Netral, Negatif</li>
+        </ul>
+      </div>
+
+      <div class="p-8 border border-borderSoft rounded-2xl">
+        <h3 class="font-bold mb-4">🏷️ Topik</h3>
+        <ul class="text-slate-600 space-y-2">
+          <li>Accuracy ≈ 73%</li>
+          <li>Macro F1-Score ≈ 0.72</li>
+          <li>4 Kategori Utama</li>
+        </ul>
+      </div>
     </div>
+
+    <p class="text-center text-slate-500 mt-12 max-w-3xl mx-auto">
+      Evaluasi dilakukan menggunakan confusion matrix, classification report,
+      dan 5-fold cross validation untuk memastikan generalisasi model.
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="py-12 bg-soft border-t border-borderSoft text-center">
+  <p class="text-slate-500 font-medium">
+    © 2025 | Sistem Klasifikasi Opini Publik Berbasis SVM
+  </p>
+  <div class="flex justify-center gap-6 mt-4 text-slate-400">
+    <a href="#" class="hover:text-primary">GitHub</a>
+    <a href="#" class="hover:text-primary">Dokumentasi</a>
+    <a href="#" class="hover:text-primary">Paper</a>
+  </div>
 </footer>
 
 </body>

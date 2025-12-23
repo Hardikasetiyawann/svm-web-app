@@ -18,7 +18,21 @@ Project ini mencakup proses **scraping data YouTube**, **preprocessing NLP**, **
 8. Visualisasi hasil analisis di website  
 
 ---
+## 🖥️ Tampilan Website (Demo Aplikasi)
 
+Berikut merupakan tampilan antarmuka website hasil implementasi model
+klasifikasi topik dan sentimen berbasis **Support Vector Machine (SVM)**.
+
+### 🔹 Halaman Beranda
+<p align="center">
+  <img src="demo/beranda.png" alt="Tampilan Halaman Beranda" width="900">
+</p>
+
+<sub><i>
+Gambar 1. Tampilan halaman beranda sistem analisis opini publik banjir bandang Sumatra
+</i></sub>
+
+---
 ## 📥 1. Scraping Data (YouTube Data API v3)
 
 ### 🔹 Sumber Data

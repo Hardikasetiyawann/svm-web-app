@@ -19,6 +19,7 @@ def home():
         }
     })
 
+
 @app.route("/predict-text", methods=["POST"])
 def predict_single():
     if not request.is_json:
@@ -27,14 +28,9 @@ def predict_single():
     data = request.get_json()
     text = data.get("text", "")
 
-    # predict_text() harus mengembalikan dict: 
-    # {"input": ..., "preprocessed": ..., "kategori": ..., "sentimen": ...}
     result = predict_text(text)
-
-    if "error" in result:
-        return jsonify(result), 400
-
     return jsonify(result), 200
+
 
 @app.route("/predict-csv", methods=["POST"])
 def predict_csv():
@@ -45,7 +41,9 @@ def predict_csv():
     if file.filename == "":
         return jsonify({"error": "Nama file kosong"}), 400
 
-    # 1. Mendukung CSV dan Excel
+    # =========================
+    # 1. Baca File
+    # =========================
     ext = os.path.splitext(file.filename)[1].lower()
     try:
         if ext == ".csv":
@@ -60,9 +58,11 @@ def predict_csv():
     if df.empty:
         return jsonify({"error": "File kosong"}), 400
 
-    # 2. Cari kolom teks secara otomatis
+    # =========================
+    # 2. Deteksi Kolom Teks
+    # =========================
     TEXT_COLUMN_CANDIDATES = [
-        "comment", "text", "content", "ulasan", "komentar", 
+        "comment", "text", "content", "ulasan", "komentar",
         "full_text", "tweet", "pesan", "review", "isi"
     ]
 
@@ -78,22 +78,46 @@ def predict_csv():
             "expected_columns": TEXT_COLUMN_CANDIDATES
         }), 400
 
-    # 3. Proses Analisis (Efisiensi: Hanya panggil predict_text 1 kali per baris)
+    # =========================
+    # 3. FILTER DATA KOSONG (INI KUNCI!)
+    # =========================
+    df = df[df[text_col].notna()]
+    df = df[df[text_col].astype(str).str.strip() != ""]
+
+    if df.empty:
+        return jsonify({"error": "Semua baris komentar kosong"}), 400
+
+    # =========================
+    # 4. Prediksi Batch
+    # =========================
     results = []
+
     for index, row in df.iterrows():
-        raw_text = str(row[text_col])
+        raw_text = row[text_col]
+
+        # 🔒 FILTER NAN & KOSONG SEBELUM predict
+        if pd.isna(raw_text) or not isinstance(raw_text, str) or raw_text.strip() == "":
+            continue   # LEWATI BARIS INI
+
         prediction = predict_text(raw_text)
-        
-        # Simpan semua data yang dibutuhkan frontend
+
+        # Jika preprocessing menghasilkan kosong, skip
+        if prediction.get("preprocessed", "").strip() == "":
+            continue
+
         results.append({
             "text": raw_text,
-            "preprocessed": prediction.get("preprocessed", ""), # PENTING: Untuk keyword
-            "kategori": prediction.get("kategori", "Unknown"),
-            "sentimen": prediction.get("sentimen", "Unknown")
+            "preprocessed": prediction["preprocessed"],
+            "kategori": prediction["kategori"],
+            "sentimen": prediction["sentimen"]
         })
 
-    # Mengembalikan list of dicts yang bersih
+
+    if not results:
+        return jsonify({"error": "Tidak ada data valid setelah preprocessing"}), 400
+
     return jsonify(results), 200
+
 
 if __name__ == "__main__":
     app.run(
