@@ -1,4 +1,3 @@
-```md
 # 🧠 SVM Web App – Topic & Sentiment Analysis (Bahasa Indonesia)
 
 Aplikasi web end-to-end untuk **analisis topik dan sentimen komentar berbahasa Indonesia** menggunakan **Support Vector Machine (SVM)**.  
@@ -22,14 +21,13 @@ Project ini mencakup proses **scraping data YouTube**, **preprocessing NLP**, **
 ## 📥 1. Scraping Data (YouTube Data API v3)
 
 ### 🔹 Sumber Data
-- **Platform**: YouTube Channel Najwa Shihab
+- **Platform**: YouTube (Channel Najwa Shihab)  
 - **Data**: Komentar publik  
 - **Topik**: Isu banjir bandang Aceh  
 - **Bahasa**: Indonesia  
 
 ### 🔹 Metode
-Scraping dilakukan menggunakan **YouTube Data API v3** untuk mengambil:
-- Komentar dari 7 video yang membahas bencana banjir bandang Aceh
+Scraping dilakukan menggunakan **YouTube Data API v3** untuk mengambil komentar dari **7 video** yang membahas bencana banjir bandang Aceh.
 
 Dataset hasil scraping disimpan dalam format **CSV** untuk tahap preprocessing dan pemodelan.
 
@@ -40,13 +38,12 @@ Dataset hasil scraping disimpan dalam format **CSV** untuk tahap preprocessing d
 Tahapan preprocessing bertujuan untuk membersihkan dan menormalkan teks sebelum dilakukan pemodelan.
 
 ### 🔹 Tahapan Preprocessing
-1. Case folding (mengubah teks menjadi huruf kecil)
-2. Menghapus URL, mention, emoji, angka, dan simbol
+1. Case folding  
+2. Menghapus URL, mention, emoji, angka, dan simbol  
 3. Normalisasi kata tidak baku (slang)  
-   → menggunakan kamus slang Bahasa Indonesia
-4. Tokenizing
-5. Stopword removal (NLTK Indonesian stopwords)
-6. Stemming menggunakan **Sastrawi**
+4. Tokenizing 
+5. Stopword removal (NLTK Indonesian stopwords)  
+6. Stemming menggunakan **Sastrawi**   
 
 ---
 
@@ -63,50 +60,48 @@ Tahapan preprocessing bertujuan untuk membersihkan dan menormalkan teks sebelum 
 - Negatif  
 - Netral  
 
+---
 
 ## 🤖 4. Feature Extraction & Selection
 
 ### 🔹 TF-IDF
-- Analyzer: `char_wb`
-- N-gram: `(3,5)`
-- Sublinear TF
-- Pengaturan `max_df` dan `min_df` disesuaikan dengan dataset
+- Analyzer: `char_wb`  
+- N-gram: `(3,5)`  
+- Sublinear TF  
+- Pengaturan `min_df` dan `max_df` disesuaikan dengan dataset  
 
 ### 🔹 Feature Selection
-- **Chi-Square (SelectKBest)**
-- Digunakan untuk mengurangi dimensi fitur agar model lebih efisien dan stabil
+- **Chi-Square (SelectKBest)**  
+- Digunakan untuk mengurangi dimensi fitur agar model lebih efisien dan stabil  
 
 ---
 
 ## 🧠 5. Training Model Machine Learning
 
 ### 🔹 Algoritma
-- **Support Vector Machine (LinearSVC)**
+- **Support Vector Machine (LinearSVC)**  
 
 ### 🔹 Model Terpisah
-- Model klasifikasi **Topik**
-- Model klasifikasi **Sentimen**
+- Model klasifikasi **Topik**  
+- Model klasifikasi **Sentimen**  
 
 ### 🔹 Alasan Pemilihan SVM
-- Cocok untuk data teks berdimensi tinggi
-- Stabil pada dataset menengah hingga besar
-- Umum digunakan dalam penelitian akademik
+- Cocok untuk data teks berdimensi tinggi  
+- Stabil pada dataset menengah hingga besar  
+- Umum digunakan dalam penelitian akademik  
 
 ---
 
 ## 📊 6. Evaluasi Model
 
 Evaluasi model dilakukan menggunakan:
-- Stratified train-test split
-- Classification Report:
-  - Precision
-  - Recall
-  - F1-score
-- Confusion Matrix
+- Stratified train-test split  
+- Classification Report (Precision, Recall, F1-score)  
+- Confusion Matrix  
 
 Evaluasi dilakukan **terpisah** untuk:
-- Model Topik
-- Model Sentimen
+- Model Topik  
+- Model Sentimen  
 
 ---
 
@@ -114,8 +109,7 @@ Evaluasi dilakukan **terpisah** untuk:
 
 Model disimpan menggunakan **Joblib** agar dapat digunakan kembali tanpa training ulang.
 
-```
-
+```text
 backend/models/
 ├── topic/
 │   ├── tfidf_topic.joblib
@@ -123,10 +117,9 @@ backend/models/
 │   └── svm_topic.joblib
 │
 └── sentiment/
-├── tfidf_sentiment.joblib
-├── chi2_sentiment.joblib
-└── svm_sentiment.joblib
-
+    ├── tfidf_sentiment.joblib
+    ├── chi2_sentiment.joblib
+    └── svm_sentiment.joblib
 ```
 
 ---
@@ -134,47 +127,37 @@ backend/models/
 ## 🌐 8. Deployment ke Website
 
 ### 🔹 Backend (Flask API)
+
 Backend bertugas untuk:
-- Memuat model SVM
-- Melakukan preprocessing input
-- Menyediakan endpoint prediksi
+- Memuat model SVM  
+- Melakukan preprocessing input  
+- Menyediakan endpoint prediksi  
 
 #### Endpoint Utama
-- `GET /` → Health check
-- `POST /predict-text` → Prediksi teks tunggal
-- `POST /predict-csv` → Prediksi batch CSV / Excel
+- `GET /` → Health check  
+- `POST /predict-text` → Prediksi teks tunggal  
+- `POST /predict-csv` → Prediksi batch CSV / Excel  
 
 ---
 
 ### 🔹 Frontend (Dashboard Web)
 
 Frontend dibangun menggunakan:
-- HTML
-- Tailwind CSS
-- JavaScript
+- HTML  
+- Tailwind CSS  
+- JavaScript  
 
 ### 🔹 Fitur Dashboard
 ✅ Upload file CSV / Excel  
-✅ Tabel hasil analisis:
-- Nomor
-- Komentar / Ulasan
-- Kategori topik
-- Sentimen  
-
-✅ Visualisasi interaktif:
-- Distribusi sentimen
-- Distribusi kategori
-- Persentase sentimen per kategori
-- Keyword dominan per kategori dan sentimen  
+✅ Tabel hasil analisis (komentar, topik, sentimen)  
+✅ Visualisasi interaktif distribusi topik & sentimen  
 
 ---
 
 ## 🗂️ Struktur Folder Project
 
-```
-
+```text
 svm-web-app/
-│
 ├── backend/
 │   ├── app.py
 │   ├── model_loader.py
@@ -191,12 +174,11 @@ svm-web-app/
 │   └── analyze.html
 │
 ├── modelling/
-│   └── klasifikasi_topik_and_sentimen.ipynb
+│   └── klasifikasi_topik_dan_sentimen.ipynb
 │
 ├── requirements.txt
 ├── README.md
 └── venv/
-
 ```
 
 ---
@@ -205,39 +187,33 @@ svm-web-app/
 
 ### 1️⃣ Clone Repository
 ```bash
-git clone https://github.com/username/svm-web-app.git
-````
+git clone https://github.com/Hardikasetiyawann/svm-web-app.git
+```
 
 ### 2️⃣ Buat & Aktifkan Virtual Environment
-
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
 ### 3️⃣ Install Dependency
-
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4️⃣ Jalankan Backend
-
 ```bash
 cd backend
 python app.py
 ```
 
 Backend berjalan di:
-
 ```
 http://127.0.0.1:5000
 ```
 
 ### 5️⃣ Jalankan Frontend
-
 Buka file berikut di browser:
-
 ```
 frontend/index.html
 ```
@@ -245,27 +221,21 @@ frontend/index.html
 ---
 
 ## 🎯 Use Case
-
-* Analisis opini publik
-* Monitoring sentimen isu kebencanaan
-* Penelitian akademik / jurnal
-* Dashboard analisis komentar media sosial
+- Analisis opini publik  
+- Monitoring sentimen isu kebencanaan  
+- Penelitian akademik / jurnal  
 
 ---
 
 ## 👤 Author
 
-**Hardika Setiyawan**
-Program Studi Informatika – Konsentrasi Sistem Cerdas
-Indonesia 🇮🇩
+**Hardika Setiyawan**  
+Program Studi Informatika – Konsentrasi Sistem Cerdas  
+Indonesia 🇮🇩  
 
 ---
 
 ## 📜 License
 
-Project ini dibuat untuk **keperluan akademik dan riset**.
+Project ini dibuat untuk **keperluan akademik dan riset**.  
 Silakan gunakan dengan menyertakan atribusi.
-
-```
-
----
