@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Analisis SVM - Final Version</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: '#6D28D9',
+                            secondary: '#8B5CF6',
+                            bg: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { background-color: #F8FAFC; color: #1E293B; }
+        .card { background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border-radius: 1rem; overflow: hidden; }
+        .loader { border: 3px solid #E2E8F0; border-left-color: #6D28D9; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Table Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #6D28D9; border-radius: 10px; }
+    </style>
+</head>
+
+<body class="font-sans min-h-screen">
+
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="index.html" class="text-slate-500 hover:text-brand-primary text-sm font-medium">← Kembali</a>
+        <h1 class="font-bold text-xl text-slate-800">SVM <span class="text-brand-primary">Analytics</span></h1>
+        <div class="w-20"></div>
+    </div>
+</header>
+
+<main class="max-w-4xl mx-auto p-6 space-y-8">
+    
+    <!-- TAB NAVIGATION -->
+    <div class="flex justify-center mb-6">
+        <div class="bg-slate-200/50 p-1 rounded-full flex gap-1">
+            <button id="tabTextBtn" onclick="switchTab('text')" class="px-6 py-2 rounded-full bg-brand-primary text-white font-semibold shadow-md transition">💬 Analisis Teks</button>
+            <button id="tabFileBtn" onclick="switchTab('file')" class="px-6 py-2 rounded-full text-slate-600 font-semibold transition">📊 Analisis Batch</button>
+        </div>
+    </div>
+
+    <!-- SINGLE TEXT SECTION -->
+    <section id="sectionText" class="space-y-6">
+        <div class="card p-8">
+            <h2 class="text-lg font-bold mb-4">✍️ Input Komentar</h2>
+            <textarea id="inputText" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-primary outline-none transition" placeholder="Masukkan komentar di sini..."></textarea>
+            <button id="btnAnalyzeText" onclick="analyzeText()" class="w-full mt-4 bg-brand-primary hover:bg-purple-700 text-white py-3 rounded-xl font-bold transition">Analisis Sekarang</button>
+        </div>
+
+        <div id="textResultContainer" class="hidden card p-8 border-t-4 border-brand-primary">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-slate-50 p-4 rounded-xl text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Sentimen</p>
+                    <!-- ID resSentiment akan diubah warnanya via JS -->
+                    <p id="resSentiment" class="text-2xl font-bold">-</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Kategori</p>
+                    <p id="resTopic" class="text-2xl font-bold text-blue-600">-</p>
+                </div>
+            </div>
+            <p class="text-xs font-bold text-slate-400 mb-1">HASIL PREPROCESSING:</p>
+            <p id="resPreprocessed" class="font-mono text-sm text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100">-</p>
+        </div>
+    </section>
+
+    <!-- BATCH FILE SECTION -->
+    <section id="sectionFile" class="hidden space-y-8">
+        <!-- Upload -->
+        <div id="uploadBox" class="card p-12 text-center border-2 border-dashed border-slate-300">
+            <h2 class="text-xl font-bold mb-2">Upload File (CSV/Excel)</h2>
+            <input type="file" id="csvInput" accept=".csv,.xlsx" hidden onchange="fileSelected()">
+            <button onclick="document.getElementById('csvInput').click()" class="bg-brand-primary text-white px-8 py-3 rounded-xl font-bold shadow-md mb-4">Pilih File</button>
+            <p id="fileName" class="text-sm text-brand-primary font-medium hidden mb-4"></p>
+            <button id="btnProcess" onclick="processCsv()" class="hidden w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold transition">Mulai Analisis</button>
+        </div>
+
+        <!-- DASHBOARD (VERTICAL ORDER) -->
+        <div id="dashboardState" class="hidden space-y-10">
+            
+            <!-- Tombol Analisis Ulang di bagian atas dashboard -->
+            <div class="flex justify-end">
+                <button onclick="resetBatch()" class="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-semibold transition">
+                    🔄 Analisis Ulang / Ganti File
+                </button>
+            </div>
+
+            <!-- 1. Distribusi Label Kategori (Pie Chart) -->
+            <div class="card p-8 text-center">
+                <h3 class="font-bold text-lg mb-6">1. Distribusi Label Kategori</h3>
+                <div class="max-w-xs mx-auto">
+                    <canvas id="categoryPieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 2. Sentimen per Label Kategori -->
+            <div class="card p-8">
+                <h3 class="font-bold text-lg mb-6">2. Analisis Sentimen per Kategori</h3>
+                <div class="h-80">
+                    <canvas id="sentimentStackChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 3. Tabel Data -->
+            <div class="card">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-bold text-lg">3. Rincian Tabel Hasil Analisis</h3>
+                </div>
+                <div class="overflow-x-auto max-h-96 custom-scroll">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">No</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">Komentar</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">Kategori</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">Sentimen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTable" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Keywords -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <h3 class="font-bold text-brand-primary mb-4 border-b pb-2">Top Keywords per Kategori</h3>
+                    <div id="kwCategory" class="space-y-4 text-sm"></div>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-brand-primary mb-4 border-b pb-2">Top Keywords per Sentimen</h3>
+                    <div id="kwSentiment" class="space-y-4 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- Tombol Analisis Ulang juga di bagian bawah dashboard -->
+            <div class="flex justify-center pb-10">
+                <button onclick="resetBatch()" class="bg-brand-primary hover:bg-purple-700 text-white px-10 py-3 rounded-xl font-bold shadow-lg transition">
+                    Masukkan File Baru
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const API_URL = "http://127.0.0.1:5000";
+    let globalData = [];
+    let charts = {};
+
+    function switchTab(tab) {
+        const isText = tab === 'text';
+        document.getElementById('sectionText').classList.toggle('hidden', !isText);
+        document.getElementById('sectionFile').classList.toggle('hidden', isText);
+        document.getElementById('tabTextBtn').className = isText ? "px-6 py-2 rounded-full bg-brand-primary text-white font-semibold shadow-md transition" : "px-6 py-2 rounded-full text-slate-600 font-semibold transition";
+        document.getElementById('tabFileBtn').className = !isText ? "px-6 py-2 rounded-full bg-brand-primary text-white font-semibold shadow-md transition" : "px-6 py-2 rounded-full text-slate-600 font-semibold transition";
+    }
+
+    async function analyzeText() {
+        const text = document.getElementById('inputText').value;
+        if (!text) return alert("Isi teks!");
+        try {
+            const res = await fetch(`${API_URL}/predict-text`, {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text})
+            });
+            const d = await res.json();
+            
+            const resSentElem = document.getElementById('resSentiment');
+            document.getElementById('textResultContainer').classList.remove('hidden');
+            
+            // Set teks hasil
+            resSentElem.innerText = d.sentimen;
+            document.getElementById('resTopic').innerText = d.kategori;
+            document.getElementById('resPreprocessed').innerText = d.preprocessed || "-";
+
+            // Atur Warna Sentimen (Teks Tunggal)
+            // Hapus kelas warna sebelumnya
+            resSentElem.classList.remove('text-rose-500', 'text-emerald-500', 'text-slate-800');
+            
+            const sentimen = d.sentimen.toLowerCase();
+            if (sentimen === 'negatif') {
+                resSentElem.classList.add('text-rose-500'); // Merah
+            } else if (sentimen === 'positif') {
+                resSentElem.classList.add('text-emerald-500'); // Hijau
+            } else {
+                resSentElem.classList.add('text-slate-800'); // Hitam/Gelap (Netral)
+            }
+
+        } catch(e) { alert("Gagal koneksi ke server"); }
+    }
+
+    function fileSelected() {
+        const file = document.getElementById('csvInput').files[0];
+        if(file) {
+            document.getElementById('fileName').innerText = "📄 " + file.name;
+            document.getElementById('fileName').classList.remove('hidden');
+            document.getElementById('btnProcess').classList.remove('hidden');
+        }
+    }
+
+    async function processCsv() {
+        const fileInput = document.getElementById('csvInput');
+        const btn = document.getElementById('btnProcess');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        btn.innerText = "Memproses...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_URL}/predict-csv`, { method: 'POST', body: formData });
+            globalData = await res.json();
+            
+            document.getElementById('uploadBox').classList.add('hidden');
+            document.getElementById('dashboardState').classList.remove('hidden');
+            renderAll();
+        } catch(e) { 
+            alert("Error memproses file. Pastikan Flask Backend menyala."); 
+        } finally {
+            btn.innerText = "Mulai Analisis";
+            btn.disabled = false;
+        }
+    }
+
+    // Fungsi untuk Reset/Analisis Ulang Batch
+    function resetBatch() {
+        globalData = [];
+        // Sembunyikan dashboard, tampilkan upload box
+        document.getElementById('dashboardState').classList.add('hidden');
+        document.getElementById('uploadBox').classList.remove('hidden');
+        
+        // Reset input file
+        document.getElementById('csvInput').value = "";
+        document.getElementById('fileName').classList.add('hidden');
+        document.getElementById('btnProcess').classList.add('hidden');
+        
+        // Scroll kembali ke atas
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderAll() {
+        renderPieChart();
+        renderStackChart();
+        renderTable();
+        renderKeywords();
+    }
+
+    function renderPieChart() {
+        const counts = countBy(globalData, 'kategori');
+        if(charts.pie) charts.pie.destroy();
+        charts.pie = new Chart(document.getElementById('categoryPieChart'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(counts),
+                datasets: [{ 
+                    data: Object.values(counts), 
+                    backgroundColor: ['#6D28D9', '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#EC4899'] 
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function renderStackChart() {
+        const cats = [...new Set(globalData.map(d => d.kategori))];
+        const sentLabels = ['Positif', 'Netral', 'Negatif'];
+        const colors = ['#10B981', '#F59E0B', '#EF4444'];
+
+        const datasets = sentLabels.map((label, i) => ({
+            label: label,
+            data: cats.map(c => globalData.filter(d => d.kategori === c && d.sentimen === label).length),
+            backgroundColor: colors[i]
+        }));
+
+        if(charts.stack) charts.stack.destroy();
+        charts.stack = new Chart(document.getElementById('sentimentStackChart'), {
+            type: 'bar',
+            data: { labels: cats, datasets },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: { x: { stacked: true }, y: { stacked: true } }
+            }
+        });
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('resultTable');
+        tbody.innerHTML = globalData.map((d, i) => {
+            const komentarText = d.text || d.komentar || d.Komentar || d.comment || "Tidak ada teks";
+            return `
+            <tr>
+                <td class="px-4 py-3 text-slate-400 font-medium">${i+1}</td>
+                <td class="px-4 py-3 text-slate-700 max-w-xs truncate" title="${komentarText}">${komentarText}</td>
+                <td class="px-4 py-3 font-semibold text-brand-primary">${d.kategori}</td>
+                <td class="px-4 py-3 font-bold ${d.sentimen === 'Positif' ? 'text-emerald-500' : d.sentimen === 'Negatif' ? 'text-rose-500' : 'text-slate-800'}">${d.sentimen}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function renderKeywords() {
+        const groupK = groupKW('kategori');
+        const groupS = groupKW('sentimen');
+        
+        const renderBox = (data) => Object.entries(data).map(([key, words]) => `
+            <div>
+                <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold uppercase">${key}</span>
+                <p class="mt-1 text-slate-600 italic">${words.length > 0 ? words.join(', ') : 'Tidak ada kata kunci'}</p>
+            </div>
+        `).join('');
+
+        document.getElementById('kwCategory').innerHTML = renderBox(groupK);
+        document.getElementById('kwSentiment').innerHTML = renderBox(groupS);
+    }
+
+    function groupKW(field) {
+        const res = {};
+        globalData.forEach(d => {
+            if(!res[d[field]]) res[d[field]] = {};
+            const sourceText = d.preprocessed || d.text || d.komentar || d.Komentar || "";
+            const words = sourceText.toString().toLowerCase().split(/\s+/);
+            
+            words.forEach(w => {
+                if(w.length > 3 && isNaN(w)) {
+                    res[d[field]][w] = (res[d[field]][w] || 0) + 1;
+                }
+            });
+        });
+
+        const final = {};
+        for(let key in res) {
+            final[key] = Object.entries(res[key])
+                .sort((a,b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(x => x[0]);
+        }
+        return final;
+    }
+
+    function countBy(arr, key) {
+        return arr.reduce((acc, curr) => {
+            acc[curr[key]] = (acc[curr[key]] || 0) + 1;
+            return acc;
+        }, {});
+    }
+</script>
+
+</body>
+</html>
