@@ -31,6 +31,15 @@ klasifikasi topik dan sentimen berbasis **Support Vector Machine (SVM)**.
 Gambar 1. Tampilan halaman beranda sistem analisis opini publik banjir bandang Sumatra
 </i></sub>
 
+### 🔹 Halaman Analisis
+<p align="center">
+  <img src="demo/analisis.png" alt="Tampilan Halaman Analisis" width="900">
+</p>
+
+<sub><i>
+Gambar 2. Tampilan halaman analisis opini publik banjir bandang Sumatra
+</i></sub>
+
 ---
 ## 📥 1. Scraping Data (YouTube Data API v3)
 
